@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio/libdeps
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: Instalar PlatformIO
+        run: pip install platformio esptool
+
+      - name: Compilar
+        run: pio run -e cyd -e cyd2usb
+
+      - name: Montar binarios
+        run: |
+          mkdir -p dist
+          BA=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
+          for e in cyd cyd2usb; do
+            B=.pio/build/$e
+            cp $B/firmware.bin dist/cyd-badge-$e-launcher.bin
+            python -m esptool --chip esp32 merge-bin -o dist/cyd-badge-$e-full.bin \
+              --flash-mode dio --flash-size 4MB \
+              0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 $BA 0x10000 $B/firmware.bin
+          done
+          cp hardware/*.stl dist/
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cyd-badge-binarios
+          path: dist/*
+
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

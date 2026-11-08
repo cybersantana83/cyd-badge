@@ -1,0 +1,78 @@
+{
+  "settings": {
+    "rotation": 1,
+    "brightness": 180,
+    "invert_colors": false,
+    "touch_invert_x": false,
+    "slideshow_seconds": 0,
+    "show_dots": true,
+    "led_follow_accent": false,
+    "bg": "#0D1117",
+    "fg": "#E6EDF3",
+    "muted": "#8B949E",
+    "accent": "#F5A623"
+  },
+  "pages": [
+    {
+      "type": "profile",
+      "layout": "center",
+      "image": "/badge/img/avatar.jpg",
+      "image_size": 100,
+      "image_shape": "circle",
+      "name": "Santana",
+      "title": "Cyber Security Engineer",
+      "subtitle": "IAM / IGA • Hardware Hacking • Café com Solda"
+    },
+    {
+      "type": "profile",
+      "layout": "side",
+      "image": "/badge/img/avatar.jpg",
+      "image_size": 100,
+      "image_shape": "square",
+      "name": "Santana",
+      "title": "SRE & Segurança",
+      "subtitle": "AWS, Kubernetes, Terraform e identidade digital",
+      "accent": "#3FB950"
+    },
+    {
+      "type": "qr",
+      "label": "LinkedIn",
+      "handle": "in/seu-usuario",
+      "url": "https://www.linkedin.com/in/seu-usuario",
+      "note": "Vamos conectar! Aponte a câmera do celular.",
+      "accent": "#0A66C2"
+    },
+    {
+      "type": "qr",
+      "label": "Instagram",
+      "handle": "@cafecomsoldalab",
+      "url": "https://instagram.com/cafecomsoldalab",
+      "note": "Hardware hacking e segurança digital.",
+      "accent": "#D62976"
+    },
+    {
+      "type": "qr",
+      "label": "GitHub",
+      "handle": "github.com/seu-usuario",
+      "url": "https://github.com/seu-usuario",
+      "note": "Projetos, firmwares e ferramentas.",
+      "accent": "#6E7681"
+    },
+    {
+      "type": "vcard",
+      "label": "Salvar contato",
+      "handle": "Santana",
+      "note": "Escaneie para salvar meu contato direto na agenda.",
+      "name": "Santana",
+      "org": "Café com Solda",
+      "email": "voce@exemplo.com",
+      "url": "https://instagram.com/cafecomsoldalab",
+      "accent": "#F5A623"
+    },
+    {
+      "type": "image",
+      "image": "/badge/img/banner.jpg",
+      "hide_dots": false
+    }
+  ]
+}
