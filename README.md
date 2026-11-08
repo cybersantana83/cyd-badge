@@ -90,7 +90,7 @@ Para voltar ao Launcher, reinicie a placa e toque na tela durante o boot.
 ## Para desenvolvedores
 
 ```bash
-git clone https://github.com/SEU-USUARIO/cyd-badge.git
+git clone https://github.com/CyberSantana/cyd-badge.git
 cd cyd-badge
 pio run -e cyd                  # CYD com ILI9341
 pio run -e cyd2usb              # CYD com ST7789
