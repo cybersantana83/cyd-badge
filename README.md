@@ -12,6 +12,7 @@ Um projeto [Café com Solda](https://instagram.com/cafecomsoldalab) ☕🔧
 - **Configuração pelo celular:** a placa cria uma rede Wi-Fi e mostra QR codes na tela. Você conecta, abre o painel e edita tudo. Sem computador, sem editar JSON.
 - **Foto com recorte:** escolha da galeria, arraste e dê zoom para enquadrar. O celular redimensiona antes de enviar.
 - **Páginas prontas:** LinkedIn, Instagram, GitHub, X, YouTube, TikTok, WhatsApp, site, contato (salva direto na agenda), Wi-Fi, texto e imagem. Nas redes sociais basta digitar o usuário.
+- **Credencial de evento:** fotografe o QR do crachá de papel e a placa passa a mostrar o mesmo código, grande e com brilho máximo, para os expositores lerem. Clique duplo no BOOT pula direto para ela.
 - **Retrato ou paisagem**, com layout que se adapta e textos com acento (fonte Poppins embutida).
 - **Case impresso em 3D** incluído neste repositório.
 - **Seguro por padrão:** o Wi-Fi só liga com acesso físico à placa, usa senha nova a cada vez e desliga sozinho depois de 15 minutos sem uso.
@@ -72,6 +73,7 @@ Para editar depois, **segure o dedo na tela por 3 segundos**.
 | Segurar o dedo 1 a 3 s e soltar | Pausa ou retoma o slideshow |
 | **Segurar o dedo 3 s** | **Modo configuração** |
 | Botão BOOT (clique) | Próxima página |
+| Botão BOOT (clique duplo) | Vai direto para a credencial de evento |
 | Botão BOOT (segurar ~1 s) | Alterna o brilho |
 | Botão BOOT (segurar 3 s) | Entra ou sai do modo configuração |
 
@@ -90,7 +92,7 @@ Para voltar ao Launcher, reinicie a placa e toque na tela durante o boot.
 ## Para desenvolvedores
 
 ```bash
-git clone https://github.com/cybersantana83/cyd-badge.git
+git clone https://github.com/CyberSantana/cyd-badge.git
 cd cyd-badge
 pio run -e cyd                  # CYD com ILI9341
 pio run -e cyd2usb              # CYD com ST7789
@@ -119,6 +121,7 @@ O touch é lido por bit-bang para deixar o VSPI livre para o cartão SD.
 
 - [LovyanGFX](https://github.com/lovyan03/LovyanGFX), gráficos, JPEG e QR code
 - [ArduinoJson](https://arduinojson.org/)
+- [jsQR](https://github.com/cozmo/jsQR), leitura do QR do crachá no painel (Apache-2.0)
 - [Launcher](https://github.com/bmorcelli/Launcher) de bmorcelli
 - Fonte [Poppins](https://github.com/itfoundry/Poppins) (SIL Open Font License, veja [`licenses/`](licenses/))
 
@@ -127,3 +130,4 @@ O touch é lido por bit-bang para deixar o VSPI livre para o cartão SD.
 - Código: [MIT](LICENSE)
 - Case 3D: [CC BY-NC-SA 4.0](hardware/README.md#licença)
 - Fonte Poppins: [SIL OFL 1.1](licenses/Poppins-OFL.txt)
+- jsQR: [Apache-2.0](licenses/jsQR-LICENSE.txt)

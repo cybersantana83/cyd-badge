@@ -64,6 +64,7 @@ const PRESETS={
  tiktok:{n:'TikTok',c:'#EE1D52',i:'TT',ask:'Seu @ do TikTok',ph:'ex.: usuario',url:u=>'https://tiktok.com/@'+u,h:u=>'@'+u,re:/tiktok\.com\/@([^\/?#]+)/i},
  whatsapp:{n:'WhatsApp',c:'#1FAF55',i:'WA',ask:'Seu número com país e DDD',ph:'ex.: 5511999998888',url:u=>'https://wa.me/'+u.replace(/\D/g,''),h:u=>'+'+u.replace(/\D/g,''),re:/wa\.me\/(\d+)/i},
  link:{n:'Site / Link',c:'#8957E5',i:'🔗'},
+ event:{n:'Credencial de evento',c:'#E5484D',i:'🎟'},
  vcard:{n:'Contato',c:'#F5A623',i:'📇'},
  wifi:{n:'Wi-Fi',c:'#2F81F7',i:'📶'},
  text:{n:'Texto',c:'#8B949E',i:'T'},
@@ -106,6 +107,17 @@ function body(p){
   select(p,'image_shape','Formato da foto',[['circle','Redonda'],['square','Quadrada']]),select(p,'layout','Disposição',[['center','Foto em cima'],['side','Foto ao lado']]))}
  else if(P.url){b.push(field(p,'user',P.ask,k==='whatsapp'?'tel':'text',P.ph),field(p,'note','Texto de apoio (opcional)','text','ex.: Vamos conectar!'))}
  else if(k==='link'){b.push(field(p,'label','Título do cabeçalho','text','ex.: Meu site'),field(p,'url','Link completo','url','https://...'),field(p,'handle','Texto em destaque','text','ex.: meusite.com'),field(p,'note','Texto de apoio (opcional)'))}
+ else if(k==='event'){
+  const code=field(p,'data','Código do QR do crachá','text','ex.: p0117100946');
+  const cam=el('input',{type:'file',accept:'image/*',capture:'environment',style:'display:none'});
+  cam.onchange=()=>{if(cam.files[0])readQr(cam.files[0],p,code[1])};
+  if(p.boost===undefined)p.boost=true;
+  const bc=el('input',{type:'checkbox'});bc.checked=!!p.boost;bc.onchange=()=>p.boost=bc.checked;
+  b.push(el('button',{class:'btn p w',style:'margin-top:10px',onclick:()=>cam.click()},'📷 Ler o QR do crachá'),cam,
+   el('p',{class:'hint'},'Tire uma foto do QR do crachá de papel. O código é lido aqui no celular e a placa gera o mesmo QR, nítido e grande.'),
+   ...code,field(p,'label','Nome do evento','text','ex.: IT Summit 2026'),field(p,'handle','Seu nome (como no crachá)'),field(p,'note','Empresa ou texto (opcional)'),
+   el('label',{class:'chk'},bc,'Brilho máximo nesta página (ajuda o leitor do expositor)'),
+   el('p',{class:'hint'},'Na placa: clique duplo no botão BOOT vai direto para esta página.'))}
  else if(k==='wifi'){b.push(field(p,'ssid','Nome da rede'),field(p,'wifipass','Senha (vazio se aberta)'),field(p,'note','Texto de apoio (opcional)','text','ex.: Rede para convidados'))}
  else if(k==='vcard'){b.push(field(p,'name','Nome'),field(p,'org','Empresa'),field(p,'phone','Telefone','tel'),field(p,'email','E-mail','email'),field(p,'url','Site','url'),field(p,'note','Texto na tela (opcional)','text','ex.: Escaneie para salvar meu contato'))}
  else if(k==='text'){b.push(field(p,'label','Título do cabeçalho'),field(p,'title','Título'),field(p,'body','Texto','textarea'))}
@@ -146,6 +158,7 @@ function finalize(){
   if(k==='link'&&!o.label)o.label='Link';
   if(k==='wifi'){const e=v=>(v||'').replace(/([\\;,:"])/g,'\\$1');o.data='WIFI:T:'+(p.wifipass?'WPA':'nopass')+';S:'+e(p.ssid)+';P:'+e(p.wifipass)+';;';o.label='Wi-Fi';o.handle=p.ssid||'';delete o.url}
   if(k==='vcard'){o.label=o.label||'Salvar contato';o.handle=p.name||''}
+  if(k==='event'){o.type='qr';o.layout='big';o.label=o.label||'Credencial';o.data=(p.data||'').trim();o.boost=p.boost!==false;delete o.url}
   if(k==='profile'||k==='image')o.image=p.image||'';
   return o});
  return{settings:s,pages}}
@@ -159,6 +172,23 @@ $('#save').onclick=async()=>{const b=$('#save');b.disabled=true;b.textContent='S
 $('#done').onclick=async()=>{if(!confirm('Salvar e sair do modo configuração? O Wi-Fi da placa será desligado.'))return;
  try{await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(finalize())});await fetch('/api/exit',{method:'POST'})}catch(e){}
  document.body.innerHTML='<header><h1>Pronto! ✅</h1><p>O crachá está atualizado. Para editar de novo, segure o dedo na tela por 3 segundos.</p></header>'};
+
+// ---- leitura do QR do cracha ----
+let jsqrP=null;
+function loadJsQR(){return jsqrP||(jsqrP=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='/jsqr.js';sc.onload=()=>ok(window.jsQR);sc.onerror=no;document.head.append(sc)}))}
+async function readQr(file,p,input){
+ toast('Lendo o QR...');
+ let img;try{img=await loadImage(file)}catch(e){return toast('Não consegui abrir a foto',1)}
+ let txt=null;
+ if('BarcodeDetector' in window){try{const r=await new BarcodeDetector({formats:['qr_code']}).detect(img);if(r.length)txt=r[0].rawValue}catch(e){}}
+ if(txt==null){
+  let jsQR;try{jsQR=await loadJsQR()}catch(e){return toast('Não consegui carregar o leitor',1)}
+  for(const max of [1400,1000,700]){
+   const s=Math.min(1,max/Math.max(img.width,img.height)),w=Math.round(img.width*s),h=Math.round(img.height*s);
+   const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,0,0,w,h);
+   const r=jsQR(g.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'attemptBoth'});if(r&&r.data){txt=r.data;break}}}
+ if(txt==null)return toast('Não achei o QR. Chegue mais perto e evite reflexo',1);
+ p.data=txt;input.value=txt;toast('QR lido: '+(txt.length>30?txt.slice(0,30)+'…':txt))}
 
 // ---- recorte de imagem ----
 let cs={};

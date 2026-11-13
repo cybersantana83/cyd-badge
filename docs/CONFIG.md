@@ -31,6 +31,13 @@ As fontes Poppins (com acentos) já vêm embutidas no firmware.
 
 Toda página aceita `bg`, `fg`, `muted` e `accent` para sobrescrever o tema, e `hide_dots` para esconder o indicador.
 
+Outras opções aceitas por qualquer página:
+
+| Campo | Descrição |
+|---|---|
+| `boost` | `true` deixa o brilho no máximo enquanto a página está na tela (útil para QR lido por leitores) |
+| `layout` | Em páginas `qr`, `big` aumenta o QR para quase toda a largura em retrato |
+
 ### Tipos de página
 
 **`profile`**: foto + nome
@@ -57,6 +64,13 @@ Sem foto, aparece um círculo com as iniciais.
 | `header_fg` | Cor do texto do cabeçalho (padrão branco) |
 
 Dica: dá para gerar QR de Wi-Fi com `"data": "WIFI:T:WPA;S:MinhaRede;P:senha;;"`.
+
+**Credencial de evento**: é uma página `qr` com o conteúdo do crachá em `data`, `layout: "big"` e `boost: true`. O painel monta isso sozinho a partir da foto do crachá. O clique duplo no BOOT vai para a primeira página com `"kind": "event"` ou `"boost": true`.
+
+```json
+{ "type": "qr", "kind": "event", "layout": "big", "boost": true,
+  "label": "IT Summit 2026", "handle": "Seu Nome", "note": "Empresa", "data": "CONTEUDO_DO_QR" }
+```
 
 **`vcard`**: QR que salva o contato direto na agenda (formato MECARD)
 

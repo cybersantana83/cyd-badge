@@ -297,7 +297,7 @@ class Badge:
                 hf = self.fit(handle, tw)
                 hh, hn = self.measure(handle, tw, hf, 2), self.measure(note, tw, "small", 3)
                 avail = H - 34 - 18
-                qs = min(W - 32, avail - hh - hn - 26)
+                qs = min(W - 12, avail - hh - hn - 18) if p.get("layout") == "big" else min(W - 32, avail - hh - hn - 26)
                 tot = qs + 10 + hh + (4 + hn if hn else 0)
                 y = 34 + max(6, (avail - tot) // 2)
                 self.qrbox(img, data, (W - qs) // 2, y, qs)

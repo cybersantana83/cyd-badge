@@ -9,6 +9,7 @@
 //   Segurar o toque 1 a 3 s e soltar ................... pausa / retoma o slideshow
 //   Segurar o toque 3 s ................................ modo configuracao (Wi-Fi + painel web)
 //   Botao BOOT (clique) ................................ proxima pagina
+//   Botao BOOT (clique duplo) .......................... vai para a credencial de evento
 //   Botao BOOT (segurar ~1 s) .......................... alterna o brilho
 //   Botao BOOT (segurar 3 s) ........................... entra / sai do modo configuracao
 
@@ -21,11 +22,12 @@
 #include "touch_xpt2046.h"
 #include "fonts_embedded.h"
 #include "web_ui.h"
+#include "jsqr_gz.h"
 #include <WiFi.h>
 #include <WebServer.h>
 #include <DNSServer.h>
 
-#define FW_VERSION "1.2.1"
+#define FW_VERSION "1.3.0"
 #define CONFIG_PATH "/badge/config.json"
 
 // Pinos da CYD
@@ -422,7 +424,8 @@ static void renderQr(JsonObject p, const char *data, uint16_t bg, uint16_t fg, u
     int hHandle = measureWrapped(handle, tw, hf, 2);
     int hNote = measureWrapped(note, tw, FONT_SMALL, 3);
     int avail = H - top - DOTS_H;
-    int qs = min(W - 32, avail - hHandle - hNote - 26);
+    bool big = strcmp(p["layout"] | "", "big") == 0;
+    int qs = big ? min(W - 12, avail - hHandle - hNote - 18) : min(W - 32, avail - hHandle - hNote - 26);
     int total = qs + 10 + hHandle + (hNote ? 4 + hNote : 0);
     int y = top + max(6, (avail - total) / 2);
     drawQrBox(data, (W - qs) / 2, y, qs);
@@ -491,10 +494,21 @@ static void renderText(JsonObject p, uint16_t bg, uint16_t fg, uint16_t muted, u
 
 static bool configMode = false;
 static void drawWifiChip();
+static uint8_t userBrightness = 180;  // brilho escolhido (config ou botao BOOT)
+static bool boosted = false;          // pagina atual pediu brilho maximo
+
+// Paginas com "boost" (ex.: credencial de evento) usam brilho maximo para o
+// leitor do expositor conseguir ler o QR na tela
+static void applyPageBrightness(JsonObject p) {
+  bool want = p["boost"] | false;
+  if (want != boosted || !want) tft.setBrightness(want ? 255 : userBrightness);
+  boosted = want;
+}
 
 static void renderPage(int index) {
   tft.setRotation(settings.rotation);
   JsonObject p = pages[index];
+  applyPageBrightness(p);
   uint16_t bg, fg, muted, accent;
   pageColors(p, bg, fg, muted, accent);
   tft.startWrite();
@@ -648,7 +662,8 @@ static void toast(const char *msg) {
 static void applySettings() {
   tft.setRotation(settings.rotation);
   tft.invertDisplay(settings.invertColors);
-  tft.setBrightness(settings.brightness);
+  userBrightness = settings.brightness;
+  tft.setBrightness(boosted ? 255 : userBrightness);
   if (!settings.ledFollowAccent) setLed(0);
 }
 
@@ -763,6 +778,13 @@ static void setupRoutes() {
     touchActivity();
     server.sendHeader("Cache-Control", "no-store");
     server.send_P(200, "text/html; charset=utf-8", WEB_UI_HTML);
+  });
+
+  server.on("/jsqr.js", HTTP_GET, [touchActivity]() {
+    touchActivity();
+    server.sendHeader("Content-Encoding", "gzip");
+    server.sendHeader("Cache-Control", "max-age=86400");
+    server.send_P(200, "application/javascript", (const char *)JSQR_GZ, sizeof(JSQR_GZ));
   });
 
   server.on("/api/config", HTTP_GET, [touchActivity]() {
@@ -990,6 +1012,26 @@ static void handleTouch() {
     goPage(startX < tft.width() / 3 ? -1 : +1);
 }
 
+// Primeira pagina marcada como credencial (kind "event" ou boost), ou -1
+static int findEventPage() {
+  for (int i = 0; i < (int)pages.size(); i++) {
+    JsonObject p = pages[i];
+    if (strcmp(p["kind"] | "", "event") == 0 || (p["boost"] | false)) return i;
+  }
+  return -1;
+}
+
+static bool pendingClick = false;
+static uint32_t pendingClickAt = 0;
+static const uint32_t DOUBLE_CLICK_MS = 350;
+
+static void handlePendingClick() {
+  if (pendingClick && millis() - pendingClickAt > DOUBLE_CLICK_MS) {
+    pendingClick = false;
+    goPage(+1);
+  }
+}
+
 static void handleBootButton() {
   static bool wasDown = false;
   static uint32_t downAt = 0;
@@ -1010,9 +1052,21 @@ static void handleBootButton() {
     uint32_t held = now - downAt;
     if (held > 700) {
       level = (level + 1) % sizeof(levels);
-      tft.setBrightness(levels[level]);
+      userBrightness = levels[level];
+      if (!boosted) tft.setBrightness(userBrightness);
     } else if (held > 30) {
-      goPage(+1);
+      int ev = findEventPage();
+      if (ev < 0) {
+        goPage(+1);  // sem credencial: clique simples age na hora
+      } else if (pendingClick && now - pendingClickAt <= DOUBLE_CLICK_MS) {
+        pendingClick = false;  // clique duplo: vai direto para a credencial
+        pageIndex = ev;
+        needRedraw = true;
+        lastPageChange = now;
+      } else {
+        pendingClick = true;
+        pendingClickAt = now;
+      }
     }
   }
   wasDown = isDown;
@@ -1076,6 +1130,7 @@ void loop() {
 
   handleTouch();
   handleBootButton();
+  handlePendingClick();
 
   if (settings.slideshowMs && !slideshowPaused && millis() - lastPageChange > settings.slideshowMs) goPage(+1);
 
